@@ -13,7 +13,7 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 	userId := request.PathParameters["userId"]
 	timestamp := request.PathParameters["contextId"]
 
-	contextId := fmt.Sprintf("context#%s", timestamp)
+	contextId := timestamp
 
 	currentContext, err := cntxt.GetCurrentContext(userId)
 	fmt.Printf("close GetCurrentContext err: %+v\n----\n", err)
@@ -22,14 +22,14 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 	}
 
 	if timestamp == "current" {
-		if currentContext.Pk == "" {
+		if currentContext.UserId == "" {
 			return utils.HandleCode(404, "no current context")
 		}
-		contextId = currentContext.Sk
+		contextId = currentContext.ContextId
 	}
 	fmt.Printf("contextId vs currentContext: '%s'\nvs\n'%+vs'\n----\n", contextId, currentContext)
 
-	if contextId == currentContext.Sk {
+	if contextId == currentContext.ContextId {
 		fmt.Printf("context '%s' is current context\n", contextId)
 		cntxt.SetLastContext(userId, contextId)
 		cntxt.SetCurrentContext(userId, "")

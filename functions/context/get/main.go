@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	cntxt "main/functions/context"
 	"main/utils"
 
@@ -16,14 +15,14 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 	c := cntxt.Context{}
 
 	if hasTimestamp {
-		if timestamp == "lastContext" {
+		if timestamp == "last" {
 			ctx, err := cntxt.GetLastContext(userId)
 			if err != nil {
 				return utils.HandleError(err)
 			}
 			c = *ctx
 		} else {
-			ctx, err := cntxt.GetContext(userId, fmt.Sprintf("context#%s", timestamp))
+			ctx, err := cntxt.GetContext(userId, timestamp)
 			if err != nil {
 				if err.Error() == "not found" {
 					return utils.HandleCode(404, "context not found")

@@ -13,14 +13,14 @@ export default {
       runtime: "go",
     });
     app.stack(function Stack({ stack }) {
-      const mainTable = new Table(stack, "main", {
+      const mainTable = new Table(stack, "context", {
         fields: {
-          pk: "string",
-          sk: "string",
+          userId: "string",
+          contextId: "string",
         },
         primaryIndex: {
-          partitionKey: "pk",
-          sortKey: "sk"
+          partitionKey: "userId",
+          sortKey: "contextId"
         },
       });
       const api = new Api(stack, "api", {

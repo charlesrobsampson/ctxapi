@@ -16,7 +16,7 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 
 	fmt.Printf("body\n%s\n----\n", []byte(request.Body))
 	var body cntxt.Context
-	body.Pk = userId
+	body.UserId = userId
 	err := json.Unmarshal([]byte(request.Body), &body)
 	if err != nil {
 		dec, err := b64.StdEncoding.DecodeString(request.Body)
@@ -38,7 +38,7 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 		return utils.HandleError(err)
 	}
 
-	body.Sk = contextId
+	body.ContextId = contextId
 	body.NoteString = ""
 	output, err := json.Marshal(body)
 	if err != nil {

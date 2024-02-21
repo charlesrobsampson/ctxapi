@@ -10,25 +10,26 @@ import (
 
 type (
 	Context struct {
-		Pk          string          `json:"pk,omitempty"`
-		Sk          string          `json:"sk,omitempty"`
-		ParentId    string          `json:"parentId,omitempty"`
-		LastContext string          `json:"lastContext,omitempty"`
 		Name        string          `json:"name,omitempty"`
 		Notes       json.RawMessage `json:"notes,omitempty"`
+		UserId      string          `json:"userId,omitempty"`
+		ContextId   string          `json:"contextId,omitempty"`
+		ParentId    string          `json:"parentId,omitempty"`
+		LastContext string          `json:"lastContext,omitempty"`
 		NoteString  string          `json:"noteString,omitempty"`
 		Created     string          `json:"created,omitempty"`
 		Completed   string          `json:"completed,omitempty"`
-		Random      string          `json:"random,omitempty"`
 	}
 )
 
 var (
-	SkDateFormat = "2006-01-02T15:04:05Z"
+	SkDateFormat    = "2006-01-02T15:04:05Z"
+	pkString        = "userId"
+	timestampString = "contextId"
 )
 
 func (c *Context) Update() (string, error) {
-	currentContext, err := GetCurrentContext(c.Pk)
+	currentContext, err := GetCurrentContext(c.UserId)
 	fmt.Printf("current context\n%+v\n----\n", currentContext)
 	fmt.Printf("c\n%+v\n----\n", c)
 	if err != nil {
@@ -44,13 +45,9 @@ func (c *Context) Update() (string, error) {
 		}
 	}
 	fmt.Printf("notes\n%+v\n----\n", notes)
-	if false && currentContext.Name == c.Name && currentContext.ParentId == c.ParentId { // for now we will alwaus create a new context with a new note
+	if currentContext.Name == c.Name && currentContext.ParentId == c.ParentId { // for now we will alwaus create a new context with a new note
+		c = currentContext
 		// only update notes
-		fmt.Printf("only updating notes\n----\n")
-		// if len(currentContext.Notes) != 0 && len(c.Notes) != 0 {
-		// 	c.Notes = append(currentContext.Notes, c.Notes...)
-		// if currentContext.Notes != "" && c.Notes != "" {
-
 		if string(currentContext.Notes) != "" && len(notes) != 0 {
 			fmt.Printf("currentContext.Notes\n%+v\n----\n", string(currentContext.Notes))
 			fmt.Print("both notes are not empty\n----\n")
@@ -67,38 +64,25 @@ func (c *Context) Update() (string, error) {
 				return "", err
 			}
 			c.NoteString = string(notesJson)
-			// 	c.Notes = fmt.Sprintf("%s\n%s", currentContext.Notes, c.Notes)
 			fmt.Printf("notes\n%+v\n----\n", notes)
 		} else if string(currentContext.Notes) != "" && len(notes) == 0 {
-			// } else if len(currentContext.Notes) != 0 && len(c.Notes) == 0 {
 			c.NoteString = currentContext.NoteString
 		}
-		return currentContext.Sk, utils.UpdateField(utils.Config{
-			PK: utils.NameVal{
-				Name:  "pk",
-				Value: currentContext.Pk,
-			},
-			SK: utils.NameVal{
-				Name:  "sk",
-				Value: currentContext.Sk,
-			},
-			TableName: utils.MainTableName,
-		}, "noteString", c.NoteString)
 	} else {
 		// create new context
 		c.Created = created
-		c.Sk = fmt.Sprintf("context#%s", created)
-		if currentContext.Sk != "" {
-			c.LastContext = currentContext.Sk
+		c.ContextId = created
+		if currentContext.ContextId != "" {
+			c.LastContext = currentContext.ContextId
 			// if currentContext.Sk != c.ParentId {
 			// 	currentContext.Close()
 			// }
 			currentContext.Close()
 		}
-		if currentContext.Pk != "" {
-			SetLastContext(currentContext.Pk, currentContext.Sk)
+		if currentContext.UserId != "" {
+			SetLastContext(currentContext.UserId, currentContext.ContextId)
 		}
-		SetCurrentContext(c.Pk, c.Sk)
+		SetCurrentContext(c.UserId, c.ContextId)
 	}
 	fmt.Printf("update context\n%+v\n----\n", c)
 	noteBytes, err := json.Marshal(notes)
@@ -107,11 +91,11 @@ func (c *Context) Update() (string, error) {
 	}
 	c.NoteString = string(noteBytes)
 	saveContext(c)
-	return c.Sk, nil
+	return c.ContextId, nil
 }
 
 func (c *Context) Close() error {
-	beforeClose, err := GetContext(c.Pk, c.Sk)
+	beforeClose, err := GetContext(c.UserId, c.ContextId)
 	if err != nil {
 		return err
 	}
@@ -123,12 +107,12 @@ func (c *Context) Close() error {
 func GetCurrentContext(userId string) (*Context, error) {
 	currentResponse, err := utils.GetDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
-			Value: "context",
+			Name:  timestampString,
+			Value: "current",
 		},
 		TableName: utils.MainTableName,
 	})
@@ -143,7 +127,7 @@ func GetCurrentContext(userId string) (*Context, error) {
 		return &Context{}, err
 	}
 	currentContextId := struct {
-		CurrentContext string `json:"currentContext"`
+		CurrentContext string `json:"contextLookup"`
 	}{}
 	err = json.Unmarshal(currentJSON, &currentContextId)
 	if err != nil {
@@ -161,12 +145,12 @@ func GetCurrentContext(userId string) (*Context, error) {
 func GetLastContext(userId string) (*Context, error) {
 	lastResponse, err := utils.GetDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
-			Value: "lastContext",
+			Name:  timestampString,
+			Value: "last",
 		},
 		TableName: utils.MainTableName,
 	})
@@ -181,7 +165,7 @@ func GetLastContext(userId string) (*Context, error) {
 		return &Context{}, err
 	}
 	lastContextId := struct {
-		LastContext string `json:"lastContext"`
+		LastContext string `json:"contextLookup"`
 	}{}
 	err = json.Unmarshal(lastJSON, &lastContextId)
 	if err != nil {
@@ -199,16 +183,16 @@ func GetLastContext(userId string) (*Context, error) {
 func SetCurrentContext(userId, contextId string) error {
 	err := utils.AddRecordDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
-			Value: "context",
+			Name:  timestampString,
+			Value: "current",
 		},
 		TableName: utils.MainTableName,
 	}, map[string]interface{}{
-		"currentContext": contextId,
+		"contextLookup": contextId,
 	})
 	return err
 }
@@ -216,16 +200,16 @@ func SetCurrentContext(userId, contextId string) error {
 func SetLastContext(userId, contextId string) error {
 	err := utils.AddRecordDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
-			Value: "lastContext",
+			Name:  timestampString,
+			Value: "last",
 		},
 		TableName: utils.MainTableName,
 	}, map[string]interface{}{
-		"lastContext": contextId,
+		"contextLookup": contextId,
 	})
 	return err
 }
@@ -233,11 +217,11 @@ func SetLastContext(userId, contextId string) error {
 func GetContext(userId, contextId string) (*Context, error) {
 	contextResponse, err := utils.GetDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
+			Name:  timestampString,
 			Value: contextId,
 		},
 		TableName: utils.MainTableName,
@@ -252,19 +236,19 @@ func GetContext(userId, contextId string) (*Context, error) {
 func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
 	contextResponse, err := utils.QueryWithFilter(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
+			Name:  pkString,
 			Value: userId,
 		},
 		SK: utils.NameVal{
-			Name: "sk",
+			Name: timestampString,
 		},
 		SKBetween: utils.Between{
 			Lower: utils.NameVal{
-				Name:  "sk",
+				Name:  timestampString,
 				Value: lower,
 			},
 			Upper: utils.NameVal{
-				Name:  "sk",
+				Name:  timestampString,
 				Value: upper,
 			},
 		},
@@ -311,7 +295,7 @@ func responseToContext(contextResponse map[string]interface{}) (*Context, error)
 		return &Context{}, err
 	}
 	fmt.Printf("currentContext\n%+v\n----\n", currentContext)
-	if currentContext.Pk == "" {
+	if currentContext.UserId == "" {
 		return &Context{}, errors.New("not found")
 	}
 	// noteBytes, err := json.Marshal(&currentContext.NoteString)
@@ -368,8 +352,8 @@ func saveContext(c *Context) error {
 		expires = completedTime.AddDate(1, 0, 0).Unix()
 	}
 	payload := map[string]interface{}{
-		"pk":          c.Pk,
-		"sk":          c.Sk,
+		"userId":      c.UserId,
+		"timestamp":   c.ContextId,
 		"parentId":    c.ParentId,
 		"lastContext": c.LastContext,
 		"name":        c.Name,
@@ -377,19 +361,18 @@ func saveContext(c *Context) error {
 		"notesString": c.NoteString,
 		"created":     c.Created,
 		"completed":   c.Completed,
-		"random":      c.Random,
 		"expires":     expires,
 	}
 	fmt.Printf("saveContext payload\n%+v\n----\n", payload)
 
 	err = utils.AddRecordDynamic(utils.Config{
 		PK: utils.NameVal{
-			Name:  "pk",
-			Value: c.Pk,
+			Name:  pkString,
+			Value: c.UserId,
 		},
 		SK: utils.NameVal{
-			Name:  "sk",
-			Value: c.Sk,
+			Name:  timestampString,
+			Value: c.ContextId,
 		},
 		TableName: utils.MainTableName,
 	}, payload)

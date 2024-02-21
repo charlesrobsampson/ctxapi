@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	cntxt "main/functions/context"
 	"main/utils"
 	"strconv"
@@ -70,37 +69,10 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 		end = time.Now().UTC().Format(cntxt.SkDateFormat)
 	}
 
-	contexts, err := cntxt.ListContexts(userId, fmt.Sprintf("context#%s", start), fmt.Sprintf("context#%s", end), "")
+	contexts, err := cntxt.ListContexts(userId, start, end, "")
 	if err != nil {
 		return utils.HandleError(err)
 	}
-
-	// c := cntxt.Context{}
-
-	// if hasTimestamp {
-	// 	if timestamp == "lastContext" {
-	// 		ctx, err := cntxt.GetLastContext(userId)
-	// 		if err != nil {
-	// 			return utils.HandleError(err)
-	// 		}
-	// 		c = *ctx
-	// 	} else {
-	// 		ctx, err := cntxt.GetContext(userId, fmt.Sprintf("context#%s", timestamp))
-	// 		fmt.Printf("searching for context with timestamp '%s'\n", timestamp)
-	// 		if err.Error() == "not found" {
-	// 			return utils.HandleCode(404, "context not found")
-	// 		} else if err != nil {
-	// 			return utils.HandleError(err)
-	// 		}
-	// 		c = *ctx
-	// 	}
-	// } else {
-	// 	ctx, err := cntxt.GetCurrentContext(userId)
-	// 	if err != nil {
-	// 		return utils.HandleError(err)
-	// 	}
-	// 	c = *ctx
-	// }
 
 	list := []cntxt.Context{}
 
@@ -109,19 +81,10 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 		list = append(list, c)
 	}
 
-	// list := []cntxt.Context{
-	// 	c,
-	// }
-
 	ctxJSON, err := json.Marshal(list)
 	if err != nil {
 		return utils.HandleError(err)
 	}
-
-	// contextString, err := c.ToJSONString()
-	// if err != nil {
-	// 	return utils.HandleError(err)
-	// }
 
 	return utils.HandleSuccess(string(ctxJSON))
 }
