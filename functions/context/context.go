@@ -23,7 +23,7 @@ type (
 )
 
 var (
-	SkDateFormat    = "2006-01-02T15:04:05Z"
+	SkDateFormat    = utils.SkDateFormat
 	pkString        = "userId"
 	timestampString = "contextId"
 )
@@ -234,7 +234,7 @@ func GetContext(userId, contextId string) (*Context, error) {
 }
 
 func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
-	contextResponse, err := utils.QueryWithFilter(utils.Config{
+	contextResponses, err := utils.QueryWithFilter(utils.Config{
 		PK: utils.NameVal{
 			Name:  pkString,
 			Value: userId,
@@ -259,7 +259,7 @@ func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
 		return &[]Context{}, err
 	}
 	var contexts []Context
-	for _, contextResponse := range contextResponse {
+	for _, contextResponse := range contextResponses {
 		context, err := responseToContext(contextResponse)
 		if err != nil {
 			return nil, err
@@ -344,7 +344,6 @@ func saveContext(c *Context) error {
 		return err
 	}
 	if c.Completed != "" {
-		// add 1 year to c.Completed and update expires to be that date in UNIX
 		completedTime, err := time.Parse(SkDateFormat, c.Completed)
 		if err != nil {
 			return err
@@ -352,16 +351,15 @@ func saveContext(c *Context) error {
 		expires = completedTime.AddDate(1, 0, 0).Unix()
 	}
 	payload := map[string]interface{}{
-		"userId":      c.UserId,
-		"timestamp":   c.ContextId,
-		"parentId":    c.ParentId,
-		"lastContext": c.LastContext,
-		"name":        c.Name,
-		// "notes":       c.Notes,
-		"notesString": c.NoteString,
-		"created":     c.Created,
-		"completed":   c.Completed,
-		"expires":     expires,
+		"userId":        c.UserId,
+		timestampString: c.ContextId,
+		"parentId":      c.ParentId,
+		"lastContext":   c.LastContext,
+		"name":          c.Name,
+		"notesString":   c.NoteString,
+		"created":       c.Created,
+		"completed":     c.Completed,
+		"expires":       expires,
 	}
 	fmt.Printf("saveContext payload\n%+v\n----\n", payload)
 

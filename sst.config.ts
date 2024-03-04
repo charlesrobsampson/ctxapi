@@ -23,10 +23,23 @@ export default {
           sortKey: "contextId"
         },
       });
+      const queueTable = new Table(stack, "queue", {
+        fields: {
+          userId: "string",
+          id: "string",
+        },
+        primaryIndex: {
+          partitionKey: "userId",
+          sortKey: "id"
+        },
+      });
       const api = new Api(stack, "api", {
         defaults: {
           function: {
-            bind: [mainTable]
+            bind: [
+              mainTable,
+              queueTable,
+            ],
           }
         },
         routes: {
@@ -75,6 +88,62 @@ export default {
               ],
               environment: {
                 mainTableName: mainTable.tableName,
+              }
+            }
+          },
+          "GET /queue/{userId}/{queueId}": {
+            function: {
+              timeout: '30 seconds',
+              handler: "functions/queue/get/main.go",
+              permissions: [
+                mainTable,
+                queueTable,
+              ],
+              environment: {
+                mainTableName: mainTable.tableName,
+                queueTableName: queueTable.tableName,
+              }
+            }
+          },
+          "GET /queue/{userId}": {
+            function: {
+              timeout: '30 seconds',
+              handler: "functions/queue/list/main.go",
+              permissions: [
+                mainTable,
+                queueTable,
+              ],
+              environment: {
+                mainTableName: mainTable.tableName,
+                queueTableName: queueTable.tableName,
+              }
+            }
+          },
+          "POST /queue/{userId}": {
+            function: {
+              timeout: '30 seconds',
+              handler: "functions/queue/update/main.go",
+              permissions: [
+                mainTable,
+                queueTable,
+              ],
+              environment: {
+                mainTableName: mainTable.tableName,
+                queueTableName: queueTable.tableName,
+              }
+            }
+          },
+          "POST /queue/{userId}/{queueId}/start": {
+            function: {
+              timeout: '30 seconds',
+              handler: "functions/queue/start/main.go",
+              permissions: [
+                mainTable,
+                queueTable,
+              ],
+              environment: {
+                mainTableName: mainTable.tableName,
+                queueTableName: queueTable.tableName,
               }
             }
           },

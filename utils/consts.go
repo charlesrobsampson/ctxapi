@@ -34,5 +34,8 @@ var (
 		"y": Duration.Year,
 	}
 
-	MainTableName = os.Getenv("mainTableName")
+	SkDateFormat = "2006-01-02T15:04:05Z"
+
+	MainTableName  = os.Getenv("mainTableName")
+	QueueTableName = os.Getenv("queueTableName")
 )
