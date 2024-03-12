@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	q "main/functions/queue"
 	"main/utils"
 
@@ -35,7 +34,8 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 	}
 	// contextString, err := queue.ToJSONString()
 
-	qJSON, err := json.Marshal(list)
+	qJSON, err := utils.JsonMarshal(list, false)
+	// qJSON, err := json.Marshal(list)
 	if err != nil {
 		return utils.HandleError(err)
 	}

@@ -40,7 +40,8 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 
 	body.ContextId = contextId
 	body.NoteString = ""
-	output, err := json.Marshal(body)
+	output, err := utils.JsonMarshal(body, false)
+	// output, err := json.Marshal(body)
 	if err != nil {
 		return utils.HandleError(err)
 	}

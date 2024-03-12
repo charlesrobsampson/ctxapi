@@ -59,7 +59,8 @@ func (c *Context) Update() (string, error) {
 			}
 
 			notes = append(currentNotes, notes...)
-			notesJson, err := json.Marshal(notes)
+			notesJson, err := utils.JsonMarshal(notes, false)
+			// notesJson, err := json.Marshal(notes)
 			if err != nil {
 				return "", err
 			}
@@ -85,7 +86,8 @@ func (c *Context) Update() (string, error) {
 		SetCurrentContext(c.UserId, c.ContextId)
 	}
 	fmt.Printf("update context\n%+v\n----\n", c)
-	noteBytes, err := json.Marshal(notes)
+	noteBytes, err := utils.JsonMarshal(notes, false)
+	// noteBytes, err := json.Marshal(notes)
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +123,8 @@ func GetCurrentContext(userId string) (*Context, error) {
 		fmt.Printf("error getting current context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
-	currentJSON, err := json.Marshal(currentResponse)
+	currentJSON, err := utils.JsonMarshal(currentResponse, false)
+	// currentJSON, err := json.Marshal(currentResponse)
 	if err != nil {
 		fmt.Printf("error marshalling current context\n%s\n----\n", err.Error())
 		return &Context{}, err
@@ -159,7 +162,8 @@ func GetLastContext(userId string) (*Context, error) {
 		fmt.Printf("error getting last context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
-	lastJSON, err := json.Marshal(lastResponse)
+	lastJSON, err := utils.JsonMarshal(lastResponse, false)
+	// lastJSON, err := json.Marshal(lastResponse)
 	if err != nil {
 		fmt.Printf("error marshalling last context\n%s\n----\n", err.Error())
 		return &Context{}, err
@@ -270,7 +274,8 @@ func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
 }
 
 func (c *Context) ToJSONString() (string, error) {
-	ctxJSON, err := json.Marshal(c)
+	ctxJSON, err := utils.JsonMarshal(c, false)
+	// ctxJSON, err := json.Marshal(c)
 	if err != nil {
 		fmt.Printf("error marshalling context\n%s\n----\n", err.Error())
 		return "", err
@@ -283,7 +288,8 @@ func responseToContext(contextResponse map[string]interface{}) (*Context, error)
 	fmt.Printf("contextResponse\n%+v\n----\n", contextResponse)
 	noteIntf := contextResponse["notesString"]
 	noteString, ok := noteIntf.(string)
-	ctxJSON, err := json.Marshal(contextResponse)
+	ctxJSON, err := utils.JsonMarshal(contextResponse, false)
+	// ctxJSON, err := json.Marshal(contextResponse)
 	if err != nil {
 		fmt.Printf("error marshalling context\n%s\n----\n", err.Error())
 		return &Context{}, err

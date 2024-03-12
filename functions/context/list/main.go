@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	cntxt "main/functions/context"
 	"main/utils"
 	"strconv"
@@ -81,7 +80,8 @@ func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResp
 		list = append(list, c)
 	}
 
-	ctxJSON, err := json.Marshal(list)
+	ctxJSON, err := utils.JsonMarshal(list, false)
+	// ctxJSON, err := json.Marshal(list)
 	if err != nil {
 		return utils.HandleError(err)
 	}

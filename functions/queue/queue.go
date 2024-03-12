@@ -61,7 +61,8 @@ func (q *Queue) Update() (string, error) {
 			}
 
 			notes = append(currentNotes, notes...)
-			notesJson, err := json.Marshal(notes)
+			notesJson, err := utils.JsonMarshal(notes, false)
+			// notesJson, err := json.Marshal(notes)
 			if err != nil {
 				return "", err
 			}
@@ -75,7 +76,8 @@ func (q *Queue) Update() (string, error) {
 		q.Id = created
 	}
 	fmt.Printf("update queue\n%+v\n----\n", q)
-	noteBytes, err := json.Marshal(notes)
+	noteBytes, err := utils.JsonMarshal(notes, false)
+	// noteBytes, err := json.Marshal(notes)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +95,8 @@ func (q *Queue) Start() (*Queue, error) {
 }
 
 func (q *Queue) ToJSONString() (string, error) {
-	qJSON, err := json.Marshal(q)
+	qJSON, err := utils.JsonMarshal(q, false)
+	// qJSON, err := json.Marshal(q)
 	if err != nil {
 		fmt.Printf("error marshalling queue\n%s\n----\n", err.Error())
 		return "", err
@@ -151,7 +154,8 @@ func responseToQueue(queueResponse map[string]interface{}) (*Queue, error) {
 	fmt.Printf("contextResponse\n%+v\n----\n", queueResponse)
 	noteIntf := queueResponse["notesString"]
 	noteString, ok := noteIntf.(string)
-	qJSON, err := json.Marshal(queueResponse)
+	qJSON, err := utils.JsonMarshal(queueResponse, false)
+	// qJSON, err := json.Marshal(queueResponse)
 	if err != nil {
 		fmt.Printf("error marshalling queue\n%s\n----\n", err.Error())
 		return &Queue{}, err
