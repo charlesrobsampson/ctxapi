@@ -1,5 +1,6 @@
 import { SSTConfig } from "sst";
 import { Api, Table } from "sst/constructs";
+const version = process.env.npm_package_version || '';
 
 export default {
   config(_input) {
@@ -43,6 +44,16 @@ export default {
           }
         },
         routes: {
+          "GET /version": {
+            function: {
+              timeout: '30 seconds',
+              handler: "functions/version/main.go",
+              permissions: [],
+              environment: {
+                version,
+              }
+            }
+          },
           "GET /context/{userId}": {
             function: {
               timeout: '30 seconds',
