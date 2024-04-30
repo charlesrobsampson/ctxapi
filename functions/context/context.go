@@ -3,7 +3,6 @@ package cntxt
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"main/utils"
 	"time"
 )
@@ -30,42 +29,41 @@ var (
 
 func (c *Context) Update() (string, error) {
 	currentContext, err := GetCurrentContext(c.UserId)
-	fmt.Printf("current context\n%+v\n----\n", currentContext)
-	fmt.Printf("c\n%+v\n----\n", c)
+	lastContext := Context{}
 	if err != nil {
 		return "", err
+	}
+	if currentContext.Name == "" {
+		last, err := GetLastContext(c.UserId)
+		lastContext = *last
+		if err != nil {
+			return "", err
+		}
 	}
 	created := time.Now().UTC().Format(SkDateFormat)
 	notes := []string{}
 	if !utils.IsNullJSON(c.Notes) {
-		// c.Notes = []byte(`[]`)
 		err = json.Unmarshal([]byte(c.Notes), &notes)
 		if err != nil {
 			return "", err
 		}
 	}
-	fmt.Printf("notes\n%+v\n----\n", notes)
-	if currentContext.Name == c.Name && currentContext.ParentId == c.ParentId { // for now we will alwaus create a new context with a new note
+	if currentContext.Name == c.Name && currentContext.ParentId == c.ParentId {
 		c = currentContext
 		// only update notes
 		if string(currentContext.Notes) != "" && len(notes) != 0 {
-			fmt.Printf("currentContext.Notes\n%+v\n----\n", string(currentContext.Notes))
-			fmt.Print("both notes are not empty\n----\n")
 			currentNotes := []string{}
 			err := json.Unmarshal(currentContext.Notes, &currentNotes)
 			if err != nil {
-				fmt.Printf("error unmarshalling current notes\n%s\n----\n", err.Error())
 				return "", err
 			}
 
 			notes = append(currentNotes, notes...)
 			notesJson, err := utils.JsonMarshal(notes, false)
-			// notesJson, err := json.Marshal(notes)
 			if err != nil {
 				return "", err
 			}
 			c.NoteString = string(notesJson)
-			fmt.Printf("notes\n%+v\n----\n", notes)
 		} else if string(currentContext.Notes) != "" && len(notes) == 0 {
 			c.NoteString = currentContext.NoteString
 		}
@@ -75,9 +73,6 @@ func (c *Context) Update() (string, error) {
 		c.ContextId = created
 		if currentContext.ContextId != "" {
 			c.LastContext = currentContext.ContextId
-			// if currentContext.Sk != c.ParentId {
-			// 	currentContext.Close()
-			// }
 			currentContext.Close()
 		}
 		if currentContext.UserId != "" {
@@ -85,11 +80,12 @@ func (c *Context) Update() (string, error) {
 		}
 		SetCurrentContext(c.UserId, c.ContextId)
 	}
-	fmt.Printf("update context\n%+v\n----\n", c)
 	noteBytes, err := utils.JsonMarshal(notes, false)
-	// noteBytes, err := json.Marshal(notes)
 	if err != nil {
 		return "", err
+	}
+	if lastContext.Name != "" {
+		c.LastContext = lastContext.ContextId
 	}
 	c.NoteString = string(noteBytes)
 	saveContext(c)
@@ -102,7 +98,6 @@ func (c *Context) Close() error {
 		return err
 	}
 	beforeClose.Completed = time.Now().UTC().Format(SkDateFormat)
-	fmt.Printf("before close\n%+v\n----\n", beforeClose)
 	return saveContext(beforeClose)
 }
 
@@ -118,15 +113,11 @@ func GetCurrentContext(userId string) (*Context, error) {
 		},
 		TableName: utils.MainTableName,
 	})
-	fmt.Printf("response\n%+v\n----\n", currentResponse)
 	if err != nil {
-		fmt.Printf("error getting current context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	currentJSON, err := utils.JsonMarshal(currentResponse, false)
-	// currentJSON, err := json.Marshal(currentResponse)
 	if err != nil {
-		fmt.Printf("error marshalling current context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	currentContextId := struct {
@@ -134,10 +125,8 @@ func GetCurrentContext(userId string) (*Context, error) {
 	}{}
 	err = json.Unmarshal(currentJSON, &currentContextId)
 	if err != nil {
-		fmt.Printf("error unmarshalling current context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
-	fmt.Printf("currentContextId\n%+v\n----\n", currentContextId)
 
 	if currentContextId.CurrentContext == "" {
 		return &Context{}, nil
@@ -157,15 +146,11 @@ func GetLastContext(userId string) (*Context, error) {
 		},
 		TableName: utils.MainTableName,
 	})
-	fmt.Printf("response\n%+v\n----\n", lastResponse)
 	if err != nil {
-		fmt.Printf("error getting last context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	lastJSON, err := utils.JsonMarshal(lastResponse, false)
-	// lastJSON, err := json.Marshal(lastResponse)
 	if err != nil {
-		fmt.Printf("error marshalling last context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	lastContextId := struct {
@@ -173,10 +158,8 @@ func GetLastContext(userId string) (*Context, error) {
 	}{}
 	err = json.Unmarshal(lastJSON, &lastContextId)
 	if err != nil {
-		fmt.Printf("error unmarshalling last context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
-	fmt.Printf("lastContextId\n%+v\n----\n", lastContextId)
 
 	if lastContextId.LastContext == "" {
 		return &Context{}, nil
@@ -231,7 +214,6 @@ func GetContext(userId, contextId string) (*Context, error) {
 		TableName: utils.MainTableName,
 	})
 	if err != nil {
-		fmt.Printf("error getting context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	return responseToContext(contextResponse)
@@ -259,7 +241,6 @@ func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
 		TableName: utils.MainTableName,
 	}, filter)
 	if err != nil {
-		fmt.Printf("error getting context\n%s\n----\n", err.Error())
 		return &[]Context{}, err
 	}
 	var contexts []Context
@@ -275,9 +256,7 @@ func ListContexts(userId, lower, upper, filter string) (*[]Context, error) {
 
 func (c *Context) ToJSONString() (string, error) {
 	ctxJSON, err := utils.JsonMarshal(c, false)
-	// ctxJSON, err := json.Marshal(c)
 	if err != nil {
-		fmt.Printf("error marshalling context\n%s\n----\n", err.Error())
 		return "", err
 	}
 
@@ -285,65 +264,36 @@ func (c *Context) ToJSONString() (string, error) {
 }
 
 func responseToContext(contextResponse map[string]interface{}) (*Context, error) {
-	fmt.Printf("contextResponse\n%+v\n----\n", contextResponse)
 	noteIntf := contextResponse["notesString"]
 	noteString, ok := noteIntf.(string)
 	ctxJSON, err := utils.JsonMarshal(contextResponse, false)
-	// ctxJSON, err := json.Marshal(contextResponse)
 	if err != nil {
-		fmt.Printf("error marshalling context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
 	currentContext := &Context{}
 	err = json.Unmarshal(ctxJSON, currentContext)
 	if err != nil {
-		fmt.Printf("error unmarshalling context\n%s\n----\n", err.Error())
 		return &Context{}, err
 	}
-	fmt.Printf("currentContext\n%+v\n----\n", currentContext)
 	if currentContext.UserId == "" {
 		return &Context{}, errors.New("not found")
 	}
-	// noteBytes, err := json.Marshal(&currentContext.NoteString)
-	// if err != nil {
-	// 	fmt.Printf("error marshalling notes\n%s\n----\n", err.Error())
-	// 	return &Context{}, err
-	// }
-	// byteString := []byte(`{"notes": %s}`)
 	if ok {
 		noteBytes := json.RawMessage{}
-		fmt.Printf("noteString\n%+v\n----\n", noteString)
 		err = json.Unmarshal([]byte(noteString), &noteBytes)
 		if err != nil {
-			fmt.Printf("error unmarshalling notes\n%s\n----\n", err.Error())
 			return &Context{}, err
 		}
-		fmt.Printf("noteBytes\n%+v\n----\n", noteBytes)
-		fmt.Printf("string(noteBytes)\n%+v\n----\n", string(noteBytes))
 		currentContext.Notes = noteBytes
 		currentContext.NoteString = noteString
 		if noteString == "[]" {
 			currentContext.Notes = json.RawMessage{}
 		}
 	}
-	// fmt.Printf("noteString\n%+v\n----\n", currentContext.NoteString)
-	// s := fmt.Sprintf(`%s`, currentContext.NoteString)
-	// fmt.Printf("s\n%+v\n----\n", s)
-	// noteBytes := json.RawMessage{}
-	// err = json.Unmarshal([]byte(s), &noteBytes)
-	// if err != nil {
-	// 	fmt.Printf("error unmarshalling notes\n%s\n----\n", err.Error())
-	// 	return &Context{}, err
-	// }
-	// currentContext.Notes = noteBytes
-	// fmt.Printf("[]byte(currentContext.NoteString\n%+v\n----\n", fmt.Sprintf(`%s`, currentContext.NoteString))
-	// currentContext.Notes = currentContext.NoteString
-	fmt.Printf("currentContext at end of responseToContext\n%+v\n----\n", currentContext)
 	return currentContext, nil
 }
 
 func saveContext(c *Context) error {
-	fmt.Printf("saveContext\n%+v\n----\n", c)
 	createdTime, err := time.Parse(SkDateFormat, c.Created)
 	expires := createdTime.AddDate(1, 0, 0).Unix()
 	if err != nil {
@@ -367,7 +317,6 @@ func saveContext(c *Context) error {
 		"completed":     c.Completed,
 		"expires":       expires,
 	}
-	fmt.Printf("saveContext payload\n%+v\n----\n", payload)
 
 	err = utils.AddRecordDynamic(utils.Config{
 		PK: utils.NameVal{
