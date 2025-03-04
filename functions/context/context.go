@@ -3,22 +3,14 @@ package cntxt
 import (
 	"encoding/json"
 	"errors"
+	"main/types"
 	"main/utils"
 	"time"
 )
 
 type (
-	Context struct {
-		Name        string          `json:"name,omitempty"`
-		Notes       json.RawMessage `json:"notes,omitempty"`
-		UserId      string          `json:"userId,omitempty"`
-		ContextId   string          `json:"contextId,omitempty"`
-		ParentId    string          `json:"parentId,omitempty"`
-		LastContext string          `json:"lastContext,omitempty"`
-		NoteString  string          `json:"noteString,omitempty"`
-		Created     string          `json:"created,omitempty"`
-		Completed   string          `json:"completed,omitempty"`
-	}
+	Context  types.Context
+	Document types.Document
 )
 
 var (
@@ -28,6 +20,7 @@ var (
 )
 
 func (c *Context) Update() (string, error) {
+	doc := c.Document
 	currentContext, err := GetCurrentContext(c.UserId)
 	lastContext := Context{}
 	if err != nil {
@@ -67,6 +60,8 @@ func (c *Context) Update() (string, error) {
 		} else if string(currentContext.Notes) != "" && len(notes) == 0 {
 			c.NoteString = currentContext.NoteString
 		}
+		// update doc links
+		c.Document = doc
 	} else {
 		// create new context
 		c.Created = created
@@ -313,6 +308,7 @@ func saveContext(c *Context) error {
 		"lastContext":   c.LastContext,
 		"name":          c.Name,
 		"notesString":   c.NoteString,
+		"document":      c.Document,
 		"created":       c.Created,
 		"completed":     c.Completed,
 		"expires":       expires,

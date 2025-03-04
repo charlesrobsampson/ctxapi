@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	ctxtype "main/types"
 	"reflect"
 	"strconv"
 	"time"
@@ -120,9 +121,20 @@ func makeItem(payload map[string]interface{}) (map[string]types.AttributeValue, 
 			item[key] = &types.AttributeValueMemberN{
 				Value: strconv.FormatInt(val, 10),
 			}
+		case ctxtype.Document:
+			v := map[string]types.AttributeValue{}
+			v["realtivePath"] = &types.AttributeValueMemberS{
+				Value: val.RealtivePath,
+			}
+			v["github"] = &types.AttributeValueMemberS{
+				Value: val.Github,
+			}
+			item["document"] = &types.AttributeValueMemberM{
+				Value: v,
+			}
 		default:
 			fmt.Printf("I dunno what dis is!!!\n%+v\n", val)
-			fmt.Printf("well it's actually of type %s\n", reflect.TypeOf(val))
+			fmt.Printf("well actually, it's  of type %s\n", reflect.TypeOf(val))
 		}
 	}
 	return item, nil

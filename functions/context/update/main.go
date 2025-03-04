@@ -14,7 +14,6 @@ import (
 func Handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResponse, error) {
 	userId := request.PathParameters["userId"]
 
-	fmt.Printf("body\n%s\n----\n", []byte(request.Body))
 	var body cntxt.Context
 	body.UserId = userId
 	err := json.Unmarshal([]byte(request.Body), &body)
